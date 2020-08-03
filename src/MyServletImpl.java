@@ -1,3 +1,5 @@
+import interfaces.WebServlet;
+
 import java.io.IOException;
 
 /**
@@ -5,6 +7,7 @@ import java.io.IOException;
  * @date 2020-08-02 19:02
  * MyServlet接口实现类业务逻辑
  */
+@WebServlet("/pengjian")
 public class MyServletImpl implements MyServlet{
 
     @Override

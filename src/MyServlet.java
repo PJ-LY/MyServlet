@@ -1,3 +1,5 @@
+import interfaces.WebServlet;
+
 /**
  * Servlet服务接口
  */

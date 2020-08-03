@@ -1,9 +1,9 @@
-import jdk.internal.org.objectweb.asm.tree.analysis.Value;
+import interfaces.HttpMethod;
+import interfaces.WebServlet;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 
 /**
  * @author pengjian
@@ -22,36 +22,78 @@ public class MyHttpServer {
         System.out.println("HTTPServer startup OK!");
     }
     //
-    public void work() throws Exception{
-        while (true){
-            try {
-                Socket socket =serverSocket.accept();
-                System.out.println(socket.getInputStream()+"请求流");
-                MyServletRequest servletRequest =new MyServletRequest(socket.getInputStream());
-                MyServletResponse servletResponse =new MyServletResponse(socket.getOutputStream());
-                System.out.println("收到请求：\n"+"请求bir：\n"+servletRequest.getRequest()+"\n 请求end");
+    public void work(HttpMethod method ) throws Exception{
+        while (true) {
+//            ClassLoader classLoader = MyServletImpl.class.getClassLoader();
+//            String path1 = classLoader.getResource("").getPath();
+//            System.out.println(path1);
 
-                String servletName = servletRequest.getServletName();
-                HashMap<String, String> map =new HashMap<>();
-                String value ="MyServletImpl";
-                map.put(servletName,value);
-                //通过反射获取servlet类对象的实例
-                MyServlet myServlet =(MyServlet) Class.forName(map.get(servletName)).newInstance();
-                //调用Myservlet接口方法
-                myServlet.init();
-                myServlet.service(servletRequest,servletResponse);
-                myServlet.destroy();
-                //关闭监听
-                socket.close();
+            //此处应获取接口实现类类路径，这里写死了
+            String tempClassPath="MyServletImpl";
+            test(HttpMethod.GET,tempClassPath);
+        }
+    }
 
-            } catch (IOException e) {
-                e.printStackTrace();
+    public  void test(HttpMethod method,String tempClassPath) throws IOException {
+        Socket socket = null;
+        try {
+            socket = serverSocket.accept();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MyServletRequest servletRequest =new MyServletRequest(socket.getInputStream());
+        System.out.println("收到请求："+servletRequest.getRequest());
+        MyServletResponse servletResponse =new MyServletResponse(socket.getOutputStream());
+        String path = servletRequest.getServletName();
+        System.out.println("用户访问的路径为："+path);
+        //下面判断映射关系
+        try {
+            //加载Servlet接口实现类类路径
+            Class<?> aClass = ClassLoader.getSystemClassLoader().loadClass(tempClassPath);
+            System.out.println("aClass输出的东西为："+aClass);
+            //获取注解路径
+            WebServlet annotation = aClass.getAnnotation(WebServlet.class);
+            System.out.println("用户通过注解定义的访问Servlet接口实现类路径为："+annotation.value());
+            if (annotation.value().equals(path)){
+
+                System.out.println("是/test的类");
+                //初始化MyServlet接口为null
+                MyServlet myServlet =null;
+                //通过反射获取aClass对应类的实例
+                Object o =aClass.newInstance();
+                if(o instanceof MyServlet){
+                    myServlet=(MyServlet) o;
+                }
+                if(myServlet==null){
+                    return;
+                }
+                if(method==HttpMethod.GET){
+                    myServlet.init();
+                    myServlet.service(servletRequest,servletResponse);
+                    myServlet.destroy();
+                }else if (method==HttpMethod.POST){
+                    System.out.println("目前还未编写处理POST请求的方法");
+                }
+            }else {
+                System.out.println("不是/test的类");
             }
+            //关闭监听
+            socket.close();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     public static void main(String[] args) throws Exception {
         MyHttpServer myHttpServer =new MyHttpServer();
-        myHttpServer.work();
+        myHttpServer.work(HttpMethod.GET);
     }
 }

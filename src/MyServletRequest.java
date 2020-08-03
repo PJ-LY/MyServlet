@@ -65,7 +65,7 @@ public class MyServletRequest {
 
     //获取要调用的Servlet的类名
     public String getServletName(){
-        return URI.substring(URI.indexOf("/") + 1,URI.indexOf("?"));
+        return URI.substring(URI.indexOf("/"),URI.indexOf("?"));
     }
 
 
